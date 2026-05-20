@@ -1,0 +1,271 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Terminal, Maximize2, Minimize2, RefreshCw } from 'lucide-react';
+import { SKILLS_DATA, STAGES_DATA, PROJECTS_DATA, CERTIFICATIONS_DATA } from '../data/portfolioData';
+
+interface TerminalLine {
+  text: string;
+  type: 'input' | 'output' | 'error' | 'success' | 'system';
+}
+
+export default function TerminalConsole() {
+  const [lines, setLines] = useState<TerminalLine[]>([
+    { text: 'PasquetOS Kernel v2.5.0-generic x86_64', type: 'system' },
+    { text: 'Initialisation des interfaces réseau... eth0 OK (10.0.0.101)', type: 'system' },
+    { text: 'Session ouverte pour l’administrateur Mattei Pasquet.', type: 'system' },
+    { text: 'Tapez "help" pour afficher la liste des commandes disponibles.', type: 'success' },
+    { text: '', type: 'output' }
+  ]);
+  const [inputVal, setInputVal] = useState<string>('');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [lines]);
+
+  const handleCommandSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const command = inputVal.trim();
+    if (!command) return;
+
+    // Add command input line
+    const newLines = [...lines, { text: `mattei@sisr-portfolio:~$ ${command}`, type: 'input' as const }];
+    
+    // Process command
+    const parts = command.split(' ');
+    const cmdName = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    const outputLines: TerminalLine[] = [];
+
+    switch (cmdName) {
+      case 'help':
+        outputLines.push(
+          { text: 'Commandes disponibles :', type: 'system' },
+          { text: '  help          Affiche cette aide', type: 'output' },
+          { text: '  clear         Efface l’écran du terminal', type: 'output' },
+          { text: '  neofetch      Affiche les informations système & logo ASCII', type: 'output' },
+          { text: '  whoami        Présente mon profil', type: 'output' },
+          { text: '  skills        Affiche mes compétences techniques', type: 'output' },
+          { text: '  stages        Affiche mes expériences de stage', type: 'output' },
+          { text: '  projets       Affiche la liste de mes projets SISR', type: 'output' },
+          { text: '  certifs       Affiche mes certifications obtenues', type: 'output' },
+          { text: '  ping <ip>     Effectue un test de connexion vers un hôte', type: 'output' },
+          { text: '  cat <fichier> Lit le contenu d’un fichier (ex: cat readme.txt)', type: 'output' },
+          { text: '  uptime        Affiche le temps d’activité système', type: 'output' }
+        );
+        break;
+
+      case 'clear':
+        setLines([]);
+        setInputVal('');
+        return;
+
+      case 'neofetch':
+        outputLines.push(
+          { text: '      .---.         mattei@sisr-portfolio', type: 'success' },
+          { text: '     /     \\        ---------------------', type: 'success' },
+          { text: '     \\_.._/         OS: PasquetOS v2.5 (Debian-based)', type: 'output' },
+          { text: '     ||  ||         Kernel: 6.1.0-18-amd64', type: 'output' },
+          { text: '     ||__||         Uptime: 15 days, 8 hours', type: 'output' },
+          { text: '    /______\\        Shell: bash 5.2.15', type: 'output' },
+          { text: '   |________|       CPU: Intel Core i7-10700K (16) @ 3.80GHz', type: 'output' },
+          { text: '   (| #  # |)       Memory: 8192MB / 16384MB (50%)', type: 'output' },
+          { text: '    |  __  |        Resolution: 1920x1080 (Responsive UI)', type: 'output' },
+          { text: '    \\______/        Option BTS: SISR (Systèmes & Réseaux)', type: 'success' }
+        );
+        break;
+
+      case 'whoami':
+        outputLines.push(
+          { text: 'Mattei Pasquet - Étudiant en 2ème année de BTS SIO Option SISR.', type: 'output' },
+          { text: 'Passionné par l\'administration de serveurs, l\'architecture réseau Cisco, la cybersécurité offensive/défensive et la virtualisation.', type: 'output' },
+          { text: 'En recherche active d’une alternance ou d’opportunités d’emploi dans le domaine des systèmes et réseaux.', type: 'success' }
+        );
+        break;
+
+      case 'skills':
+        outputLines.push({ text: '=== COMPÉTENCES PRINCIPALES ===', type: 'success' });
+        SKILLS_DATA.forEach(skill => {
+          const bars = '█'.repeat(Math.round(skill.level / 10)) + '░'.repeat(10 - Math.round(skill.level / 10));
+          outputLines.push({ text: `[${bars}] ${skill.level}% - ${skill.name}`, type: 'output' });
+        });
+        break;
+
+      case 'stages':
+        outputLines.push({ text: '=== PARCOURS DE STAGES ===', type: 'success' });
+        STAGES_DATA.forEach(stage => {
+          outputLines.push(
+            { text: `• ${stage.company} (${stage.period})`, type: 'success' },
+            { text: `  Poste: ${stage.role}`, type: 'output' },
+            { text: `  Missions: ${stage.missions[0]}`, type: 'output' },
+            { text: `  Techs: ${stage.technologies.join(', ')}`, type: 'output' },
+            { text: '----------------------------------------------', type: 'system' }
+          );
+        });
+        break;
+
+      case 'projets':
+        outputLines.push({ text: '=== LISTE DES PROJETS ===', type: 'success' });
+        PROJECTS_DATA.forEach(p => {
+          outputLines.push(
+            { text: `[${p.category.toUpperCase()}] ${p.title}`, type: 'success' },
+            { text: `  Description: ${p.description}`, type: 'output' },
+            { text: `  Technologies: ${p.technologies.join(', ')}`, type: 'output' },
+            { text: ' ', type: 'output' }
+          );
+        });
+        break;
+
+      case 'certifs':
+        outputLines.push({ text: '=== CERTIFICATIONS & ACADÉMIES ===', type: 'success' });
+        CERTIFICATIONS_DATA.forEach(c => {
+          outputLines.push({ text: `✔ ${c.name} - Délivré par: ${c.issuer} (${c.date})`, type: 'output' });
+        });
+        break;
+
+      case 'ping':
+        if (args.length === 0) {
+          outputLines.push({ text: 'Usage: ping <destination_ip_ou_hôte>', type: 'error' });
+        } else {
+          const host = args[0];
+          outputLines.push(
+            { text: `PING ${host} (56 data bytes)`, type: 'output' },
+            { text: `64 bytes from ${host}: icmp_seq=1 ttl=64 time=2.41 ms`, type: 'output' },
+            { text: `64 bytes from ${host}: icmp_seq=2 ttl=64 time=1.87 ms`, type: 'output' },
+            { text: `64 bytes from ${host}: icmp_seq=3 ttl=64 time=2.03 ms`, type: 'output' },
+            { text: `--- ${host} ping statistics ---`, type: 'system' },
+            { text: '3 packets transmitted, 3 received, 0% packet loss, time 2004ms', type: 'output' }
+          );
+        }
+        break;
+
+      case 'cat':
+        if (args.length === 0) {
+          outputLines.push({ text: 'Usage: cat <nom_fichier> (ex: cat readme.txt)', type: 'error' });
+        } else {
+          const fileName = args[0].toLowerCase();
+          if (fileName === 'readme.txt' || fileName === 'readme') {
+            outputLines.push(
+              { text: '=== BIENVENUE SUR MON PORTFOLIO ===', type: 'success' },
+              { text: 'Ce portfolio présente mes projets académiques et professionnels en BTS SIO SISR.', type: 'output' },
+              { text: 'Vous y trouverez mes configurations de routeurs Cisco, d’Active Directory, mes services Linux et mes certifications.', type: 'output' },
+              { text: 'Pour me contacter, utilisez le formulaire en bas de page ou écrivez-moi à pasquet.mattei@gmail.com.', type: 'success' }
+            );
+          } else {
+            outputLines.push({ text: `cat: ${args[0]}: Aucun fichier de ce nom trouvé. Essayez 'cat readme.txt'`, type: 'error' });
+          }
+        }
+        break;
+
+      case 'uptime':
+        outputLines.push({ text: 'uptime: up 15 days, 8 hours, 44 minutes, 1 user, load average: 0.12, 0.08, 0.05', type: 'output' });
+        break;
+
+      case 'sudo':
+        if (args.length > 0 && args[0].toLowerCase() === 'rm') {
+          outputLines.push(
+            { text: 'ALERTE DE SÉCURITÉ : Tentative de suppression racine détectée.', type: 'error' },
+            { text: 'Accès refusé. L’incident a été signalé à l’ANSSI. 😉', type: 'error' }
+          );
+        } else {
+          outputLines.push({ text: 'mattei n’est pas dans le fichier sudoers. Cet incident sera signalé.', type: 'error' });
+        }
+        break;
+
+      default:
+        outputLines.push({ 
+          text: `bash: ${cmdName}: commande introuvable. Tapez 'help' pour voir la liste des commandes.`, 
+          type: 'error' 
+        });
+    }
+
+    setLines([...newLines, ...outputLines]);
+    setInputVal('');
+  };
+
+  const handleResetTerminal = () => {
+    setLines([
+      { text: 'PasquetOS Kernel v2.5.0-generic x86_64', type: 'system' },
+      { text: 'Initialisation des interfaces réseau... eth0 OK (10.0.0.101)', type: 'system' },
+      { text: 'Session ouverte pour l’administrateur Mattei Pasquet.', type: 'system' },
+      { text: 'Tapez "help" pour afficher la liste des commandes disponibles.', type: 'success' }
+    ]);
+  };
+
+  return (
+    <div className={`bg-slate-950 border border-indigo-900/60 rounded-xl overflow-hidden shadow-2xl flex flex-col font-mono transition-all duration-300 ${
+      isFullscreen ? 'fixed inset-4 z-50' : 'h-[360px]'
+    }`}>
+      {/* Terminal Title Bar */}
+      <div className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Terminal size={16} className="text-emerald-400" />
+          <span className="text-xs text-slate-300 font-bold select-none">mattei@sisr-portfolio: ~</span>
+        </div>
+        
+        {/* Terminal Controls */}
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleResetTerminal} 
+            title="Réinitialiser"
+            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+          >
+            <RefreshCw size={12} />
+          </button>
+          <button 
+            onClick={() => setIsFullscreen(!isFullscreen)} 
+            title={isFullscreen ? "Réduire" : "Plein écran"}
+            className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+          >
+            {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+          </button>
+          
+          <div className="flex items-center gap-1 ml-2">
+            <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+            <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+            <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Terminal Content Screen */}
+      <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed space-y-1.5 scrollbar-thin scrollbar-thumb-indigo-900">
+        {lines.map((line, index) => {
+          let colorClass = 'text-slate-300';
+          if (line.type === 'input') colorClass = 'text-indigo-300';
+          else if (line.type === 'error') colorClass = 'text-rose-400 font-semibold';
+          else if (line.type === 'success') colorClass = 'text-emerald-400';
+          else if (line.type === 'system') colorClass = 'text-purple-400/85';
+
+          return (
+            <div key={index} className={`${colorClass} whitespace-pre-wrap`}>
+              {line.text}
+            </div>
+          );
+        })}
+        <div ref={terminalEndRef} />
+      </div>
+
+      {/* Terminal Input Line */}
+      <form onSubmit={handleCommandSubmit} className="bg-slate-950 border-t border-slate-900 px-4 py-2.5 flex items-center gap-1">
+        <span className="text-indigo-400 font-bold select-none">mattei@sisr-portfolio:~$</span>
+        <input
+          type="text"
+          value={inputVal}
+          onChange={(e) => setInputVal(e.target.value)}
+          className="flex-1 bg-transparent text-emerald-400 focus:outline-none border-none p-0 m-0 font-mono text-xs"
+          placeholder="Entrez une commande (ex: help, neofetch, skills)..."
+          autoFocus={!isFullscreen}
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck="false"
+        />
+      </form>
+    </div>
+  );
+}
